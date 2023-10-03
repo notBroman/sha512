@@ -4,6 +4,15 @@ import itertools
 
 
 def read_file():
+    """
+    Read all the lines from a file, assumes that all lines are a single entry
+
+    Inputs:
+        None
+    Outputs:
+        a list of all lines in that file
+    """
+
     myFile = open("PasswordDictionary.txt", 'r')
     a = myFile.read().splitlines()
     myFile.close()
@@ -41,6 +50,17 @@ def brute_force_sha512_hash(hash: str) -> str:
 
 
 def dictionary_attack(hash: str) -> str:
+    """
+    uses a dictionary of known common passphrases to find the passphrase that was used
+
+    Inputs:
+        a string that is the hash, which needs to be found
+    Outputs:
+        the passphrase from the dictionary whos hash is the same as the one given
+        or
+        "?" if the hash cannot be recreated using phrases in the dictionary
+    """
+
     pw_list = read_file()
 
     for option in pw_list:
@@ -53,6 +73,18 @@ def dictionary_attack(hash: str) -> str:
 
 
 def dictionary_attack_salt(hash_salt: tuple) -> str:
+    """
+    an attack that uses the dictionary and a salt that is appended to the candidate phrase
+
+    Inputs:
+        a tuple of strings consisting of
+            1. the hash of the passphrase
+            2. the salt that is added to the end of the passphrase
+    Outputs:
+        the passphrase from the dictionary whos hash is the same as the one given
+        or
+        "?" if the hash cannot be recreated using phrases in the dictionary
+    """
     pw_list = read_file()
 
     hash = hash_salt[0]
