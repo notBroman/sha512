@@ -25,6 +25,7 @@
 
 #define CH(e,f,g) ((e & f) ^ ((!e) & g))
 #define MAJ(a,b,c) ((a & b) ^ (a & c) ^ (b & c))
+
 // define the round constants
 static uint64_t k[80] = {
   0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc, 0x3956c25bf348b538, 
@@ -45,6 +46,17 @@ static uint64_t k[80] = {
   0x431d67c49c100d4c, 0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817
   };
 
+uint64_t swapEndian64(uint64_t value){
+
+ return (((value & 0x00000000000000FF) << 56u) | \
+  ((value & 0x000000000000FF00) << 40u) | \
+  ((value & 0x0000000000FF0000) << 24u) | \
+  ((value & 0x00000000FF000000) << 8u) | \
+  ((value & 0x000000FF00000000) >> 8u) | \
+  ((value & 0x0000FF0000000000) << 24u) | \
+  ((value & 0x00FF000000000000) << 40u) | \
+  ((value & 0xFF00000000000000) << 56u));
+}
 
 void sha512Init(Context* sha_context){
   sha_context->hash_val[0] = 0x6a09e667f3bcc908;
@@ -97,9 +109,10 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
     {
       padded[i] = '0';
     }
-    }
+  }
   //assume that no msgs longer than 2^64-1
-  itoa(char_num, sha_context->length - 64, 10);
+  uint64_t be_val = swapEndian64((uint64_t)char_num);
+  memcpy(padded+sha_context->length - sizeof(uint64_t), &be_val, sizeof(uint64_t));
 
   //////////////////////////////////////////////////////////
   // process in 1024 chuncks
