@@ -81,8 +81,8 @@ uint32_t sha512Padding(uint8_t char_num)
   
   uint64_t data_bits = char_num * 4;
   data_bits += 129; // add the lenght in 129 bits at end
-
-  uint32_t length_padding = 1024 - (uint32_t)(data_bits % 1024); // bits that need to be added for it to be n*1024
+  uint32_t temp = (uint32_t)(data_bits % 1024);
+  uint32_t length_padding = 1024 - temp; // bits that need to be added for it to be n*1024
 
   return length_padding;
 }
@@ -90,30 +90,31 @@ uint32_t sha512Padding(uint8_t char_num)
 void sha512Update(uint32_t char_num, char* str, Context* sha_context){
   // find padding
   uint32_t pad_num = sha512Padding(char_num);
-  sha_context->length = (char_num + 129 + pad_num);
+  sha_context->length = (char_num*4 + 129 + pad_num);
   if(sha_context->length % 1024 != 0){
-    printf("padded message not the right length");
+    printf("padded message not the right length: %llu\n", sha_context->length);
     return;
   }
-  char* padded = (char*)malloc(sha_context->length);
+  uint8_t* padded = (uint8_t*)malloc(sha_context->length/8);
   // create string with padding
-  for(int i = 0; i < char_num+1+pad_num; ++i){
-    if(i < char_num)
+  for(int i = 0; i < char_num*4+1+pad_num; i+=8){
+    if(i < char_num*4)
     {
-      padded[i] = str[i];
+      padded[i/8] = str[i/8];
     }
-    else if(i == char_num+1){
-      padded[i] = '1';
+    else if(i == char_num*4+1){
+      padded[i] &= 0b1000000;
     }
-    else if( i > char_num+1 && i < char_num+pad_num+1)
+    else if( i > char_num*4+1 && i)
     {
-      padded[i] = '0';
+      padded[i] &= 0x00;
     }
   }
   //assume that no msgs longer than 2^64-1
   uint64_t be_val = swapEndian64((uint64_t)char_num);
   memcpy(padded+sha_context->length - sizeof(uint64_t), &be_val, sizeof(uint64_t));
 
+  printf("%lu", sizeof(padded));
   //////////////////////////////////////////////////////////
   // process in 1024 chuncks
   while(sha_context->currlen < sha_context->length){
@@ -145,6 +146,7 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
     uint64_t g = sha_context->hash_val[6];
     uint64_t h = sha_context->hash_val[7];
 
+    // compression main loop
     for(int r = 0; r < 80; ++r){
       uint64_t t1 = h + S1(e) + CH(e,f,g) + k[r] + w[r];
       uint64_t t2 = S0(a) + MAJ(a, b, c);
@@ -169,5 +171,15 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
     sha_context->hash_val[7] += h;
 
   }
+}
+
+void sha512Digest(Context* sha_context, Digest* digest){
+  //put hashes into Digest
+  for(int i = 0; i < 8; ++i)
+  {
+    memcpy(digest->digest+64*i, &(sha_context->hash_val[i]), sizeof(uint64_t));
+  }
+
+  printf("Digest: %s", *digest->digest);
 }
 

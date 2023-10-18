@@ -18,15 +18,13 @@ typedef struct{
 } Context;
 
 typedef struct{
-  char* string;
-  uint64_t length;
-  
-} Data;
+  char* digest[513];
+} Digest ;
 
 void sha512Init(Context* sha_context);
 void sha512Compress(Context* sha_context);
 void sha512Round(char* block_data, Context* sha_context);
 void sha512Update(uint32_t char_num, char* str, Context* sha_context); //given a string and the length of the string
-void sha512Digest();
+void sha512Digest(Context* sha_context, Digest* digest);
 
 #endif
