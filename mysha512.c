@@ -112,8 +112,8 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
   // process in 1024 chuncks
   while(sha_context->currlen < sha_context->length){
     // load into message buffer
-    for(int i = sha_context->currlen; i < 1024; ++i){
-      sha_context->message_schedule[i] = padded[i];
+    for(int i = 0; i < 1024; ++i){
+      sha_context->message_schedule[i] = padded[sha_context->currlen+i];
     }
     sha_context->currlen += 1024;
 
