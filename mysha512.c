@@ -130,7 +130,7 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
   // process in 1024 chuncks
   while(sha_context->currlen < sha_context->length){
     // load into message buffer
-    printf("string copied to sha_context");
+    printf("string copied to sha_context: ");
     for(int i = 0; i < 128; ++i){
       sha_context->message_schedule[i] = padded[sha_context->currlen+i];
       printf("%x", sha_context->message_schedule[i]);
@@ -139,11 +139,11 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
     printf("\n");
 
     // copy into the w
-    printf("string copied to w");
+    printf("string copied to w: ");
     uint64_t w[80];
-    for(int i = 0; i < 15; ++i){
+    for(int i = 0; i < 16; ++i){
       for(int j = 0; j < 8; ++j){
-        memcpy((&w[i])+8*j,&sha_context->message_schedule[j], 1);
+        memcpy(&w[i],&sha_context->message_schedule[8*i+j], 8);
       }
       printf("%llx,", w[i]);
     }

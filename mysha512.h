@@ -14,11 +14,10 @@ typedef struct{
   uint64_t hash_val[8];
   uint64_t currlen;
   uint8_t message_schedule[128];
-  uint8_t round;
 } Context;
 
 typedef struct{
-  char* digest[513];
+  uint64_t digest[8];
 } Digest ;
 
 void sha512Init(Context* sha_context);
