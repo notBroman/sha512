@@ -59,6 +59,16 @@ uint64_t swapEndian64(uint64_t value){
 }
 
 void sha512Init(Context* sha_context){
+  /*
+  sha_context->hash_val[0] = swapEndian64(0x6a09e667f3bcc908);
+  sha_context->hash_val[1] = swapEndian64(0xbb67ae8584caa73b);
+  sha_context->hash_val[2] = swapEndian64(0x3c6ef372fe94f82b);
+  sha_context->hash_val[3] = swapEndian64(0xa54ff53a5f1d36f1);
+  sha_context->hash_val[4] = swapEndian64(0x510e527fade682d1);
+  sha_context->hash_val[5] = swapEndian64(0x9b05688c2b3e6c1f);
+  sha_context->hash_val[6] = swapEndian64(0x1f83d9abfb41bd6b);
+  sha_context->hash_val[7] = swapEndian64(0x5be0cd19137e2179);
+  */
   sha_context->hash_val[0] = 0x6a09e667f3bcc908;
   sha_context->hash_val[1] = 0xbb67ae8584caa73b;
   sha_context->hash_val[2] = 0x3c6ef372fe94f82b;
@@ -68,7 +78,6 @@ void sha512Init(Context* sha_context){
   sha_context->hash_val[6] = 0x1f83d9abfb41bd6b;
   sha_context->hash_val[7] = 0x5be0cd19137e2179;
 
-  sha_context->round = 0;
   sha_context->currlen = 0;
   sha_context->length = 0;
 }
@@ -88,11 +97,11 @@ uint64_t sha512Padding(uint8_t char_num)
 
 void sha512Update(uint32_t char_num, char* str, Context* sha_context){
   // find padding
-  uint32_t pad_num = sha512Padding(char_num);
-  sha_context->length = 1024*pad_num;
-  uint8_t* padded = (uint8_t*)malloc(sha_context->length/8);
+  uint64_t full_length = sha512Padding(char_num) * 128; // full length of padded msg in bytes
+  sha_context->length = full_length;
+  uint8_t* padded = (uint8_t*)malloc(full_length);
   // create string with padding
-  for(int i = 0; i < sha_context->length/8; ++i){
+  for(int i = 0; i < full_length; ++i){
     if(i < char_num)
     {
       padded[i] = str[i];
@@ -102,26 +111,43 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
       padded[i] &= 0x00;
     }
   }
-  // set byte after last character in msg to 1
-  memset(padded+char_num, 0xA0, 1);
+  // set bit after last character in msg to 1
+  memset(&padded[char_num], 0x80, 1);
+  // lenght of the message in big endian
   //assume that no msgs longer than 2^64-1
-  //uint64_t be_val = swapEndian64((uint64_t)char_num);
-  memset(padded+sha_context->length - sizeof(uint64_t), char_num, sizeof(uint64_t));
+  uint64_t be_val = swapEndian64((uint64_t)char_num);
+  memcpy(&padded[full_length - 9], &be_val, sizeof(uint64_t));
+
+
+  printf("padded bit string:\n");
+  for(int i = 0; i < sha_context->length; ++i)
+  {
+    printf("%x", padded[i]);
+  }
+  printf("\n\n");
 
   //////////////////////////////////////////////////////////
   // process in 1024 chuncks
   while(sha_context->currlen < sha_context->length){
     // load into message buffer
-    for(int i = 0; i < 1024; ++i){
+    printf("string copied to sha_context");
+    for(int i = 0; i < 128; ++i){
       sha_context->message_schedule[i] = padded[sha_context->currlen+i];
+      printf("%x", sha_context->message_schedule[i]);
     }
-    sha_context->currlen += 1024;
+    sha_context->currlen += 128;
+    printf("\n");
 
     // copy into the w
+    printf("string copied to w");
     uint64_t w[80];
-    for(int i = 0; i < 16; ++i){
-      w[i] = sha_context->message_schedule[i];
+    for(int i = 0; i < 15; ++i){
+      for(int j = 0; j < 8; ++j){
+        memcpy((&w[i])+8*j,&sha_context->message_schedule[j], 1);
+      }
+      printf("%llx,", w[i]);
     }
+    printf("\n");
 
     // extend w[0..15] to w[16..79]
     for(int i = 16; i < 80; ++i){
@@ -172,9 +198,8 @@ void sha512Digest(Context* sha_context, Digest* digest){
   //put hashes into Digest
   for(int i = 0; i < 8; ++i)
   {
-    memcpy(digest->digest+64*i, &(sha_context->hash_val[i]), sizeof(uint64_t));
+    digest->digest[i] = swapEndian64(sha_context->hash_val[i]);
   }
 
-  //printf("Digest: %s", *digest->digest);
 }
 
