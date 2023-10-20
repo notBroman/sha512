@@ -97,11 +97,11 @@ uint64_t sha512Padding(uint8_t char_num)
 
 void sha512Update(uint32_t char_num, char* str, Context* sha_context){
   // find padding
-  uint64_t full_length = sha512Padding(char_num) * 128; // full length of padded msg in bytes
-  sha_context->length = full_length;
-  uint8_t* padded = (uint8_t*)malloc(full_length);
+  uint64_t byte_num = sha512Padding(char_num) * 128; // full length of padded msg in bytes
+  sha_context->length = byte_num;
+  uint8_t* padded = (uint8_t*)malloc(sizeof(uint8_t)*byte_num);
   // create string with padding
-  for(int i = 0; i < full_length; ++i){
+  for(int i = 0; i < byte_num; ++i){
     if(i < char_num)
     {
       padded[i] = str[i];
@@ -116,15 +116,15 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
   // lenght of the message in big endian
   //assume that no msgs longer than 2^64-1
   uint64_t be_val = swapEndian64((uint64_t)char_num);
-  memcpy(&padded[full_length - 9], &be_val, sizeof(uint64_t));
+  memcpy(&(padded[byte_num - 16]), &be_val, sizeof(uint64_t));
 
 
   printf("padded bit string:\n");
-  for(int i = 0; i < sha_context->length; ++i)
+  for(int i = 0; i < byte_num; ++i)
   {
     printf("%x", padded[i]);
   }
-  printf("\n\n");
+  printf("\n%llu\n",byte_num);
 
   //////////////////////////////////////////////////////////
   // process in 1024 chuncks
@@ -142,12 +142,10 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
     printf("string copied to w: ");
     uint64_t w[80];
     for(int i = 0; i < 16; ++i){
-      for(int j = 0; j < 8; ++j){
-        memcpy(&w[i],&sha_context->message_schedule[8*i+j], 8);
-      }
+      memcpy(&w[i],&sha_context->message_schedule[8*i], 8);
       printf("%llx,", w[i]);
     }
-    printf("\n");
+    printf("\n\n");
 
     // extend w[0..15] to w[16..79]
     for(int i = 16; i < 80; ++i){
