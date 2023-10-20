@@ -142,11 +142,6 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
   uint64_t be_val = swapEndian64((uint64_t)char_num);
   memcpy(&(padded[byte_num - 8]), &be_val, sizeof(uint64_t));
 
-
-  // print the padded string for debugging
-  printf("padded bit string:");
-  printData(padded, byte_num);
-
   //////////////////////////////////////////////////////////
   // process in 1024 chuncks
   while(sha_context->currlen < sha_context->length){
@@ -156,9 +151,6 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
       //printf("%x", sha_context->message_schedule[i]);
     }
     sha_context->currlen += 128;
-    printf("string copied to sha_context: ");
-    printData(sha_context->message_schedule, 128);
-
     // copy into the w
     uint64_t w[80] = {0};
     for(int i = 0; i < 16; ++i){
@@ -173,9 +165,6 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
     for(int i = 16; i < 80; ++i){
       w[i] = w[i-16] + sig0(w[i-15]) + w[i-7] + sig1(w[i-2]);
     } 
-    // output for debugging
-    printf("data copied to w[0..15]: ");
-    printWord64(w, 80);
 
     ////////////////////////////////////////////////////////
     // compression start
