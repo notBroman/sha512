@@ -17,7 +17,7 @@
 #define sig0(w) (ROR64(w,1) ^ ROR64(w,8) ^ (w >> 7))
 #define sig1(w) (ROR64(w,19) ^ ROR64(w,61) ^ (w >> 6))
 
-#define CH(e,f,g) ((e & f) ^ ((!e) & g))
+#define CH(e,f,g) ((e & f) ^ ((~e) & g))
 #define MAJ(a,b,c) ((a & b) ^ (a & c) ^ (b & c))
 
 void printData(uint8_t* start, size_t size){
@@ -39,6 +39,15 @@ void printWord64(uint64_t* start, size_t size){
   }
   printf("\n\n");
 }
+
+void printHashes(Context* c, size_t r){
+  printf("\nRound [%04lx]",r);
+  for(int i =0; i < 8; ++i){
+    printf("%016llx ", c->hash_val[i]);
+  }
+  printf("\n");
+}
+
 // define the round constants
 static uint64_t k[80] = {
   0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc, 0x3956c25bf348b538, 
