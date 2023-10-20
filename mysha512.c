@@ -11,21 +11,34 @@
 // rotate right 64-bit value
 #define ROR64(val, n) ((val >> n) | (val << (64 - n)))
 
-// load 64-bit hash
-#define LDH64(dest, src) ;
-
-// store 64-bit hash
-#define STH64(dest, src);
-
 #define S0(a) (ROR64(a,28) ^ ROR64(a,34) ^ ROR64(a,39))
 #define S1(a) (ROR64(e,14) ^ ROR64(e,18) ^ ROR64(e,41))
 
-#define sig0(w) (ROR64(w[i-15],1) ^ ROR64(w[i-15],8) ^ (ROR64(w[i-15],7)))
-#define sig1(w) (ROR64(w[i-2],19) ^ ROR64(w[i-2],61) ^ (ROR64(w[i-2],6)))
+#define sig0(w) (ROR64(w,1) ^ ROR64(w,8) ^ (ROR64(w,7)))
+#define sig1(w) (ROR64(w,19) ^ ROR64(w,61) ^ (ROR64(w,6)))
 
 #define CH(e,f,g) ((e & f) ^ ((!e) & g))
 #define MAJ(a,b,c) ((a & b) ^ (a & c) ^ (b & c))
 
+void printData(uint8_t* start, size_t size){
+  for(int i = 0; i < size; ++i){
+    if(i % 16 == 0){
+      printf("\n[%04d]", i);
+    }
+    printf(" %02x", start[i]);
+  }
+  printf("\n\n");
+}
+
+void printWord64(uint64_t* start, size_t size){
+  for(int i = 0; i < size; ++i){
+    if(i % 4 == 0){
+      printf("\n[%04d]", i);
+    }
+    printf(" %016llx", start[i]);
+  }
+  printf("\n\n");
+}
 // define the round constants
 static uint64_t k[80] = {
   0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc, 0x3956c25bf348b538, 
@@ -112,44 +125,45 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
     }
   }
   // set bit after last character in msg to 1
+  // 0x8 == 0b1000
   memset(&padded[char_num], 0x80, 1);
-  // lenght of the message in big endian
-  //assume that no msgs longer than 2^64-1
+  char_num *= 8;
+  // length of the message (aka number of bits) in big endian
+  // assume that no msgs longer than 2^64-1
   uint64_t be_val = swapEndian64((uint64_t)char_num);
-  memcpy(&(padded[byte_num - 16]), &be_val, sizeof(uint64_t));
+  memcpy(&(padded[byte_num - 9]), &be_val, sizeof(uint64_t));
 
 
-  printf("padded bit string:\n");
-  for(int i = 0; i < byte_num; ++i)
-  {
-    printf("%x", padded[i]);
-  }
-  printf("\n%llu\n",byte_num);
+  // print the padded string for debugging
+  printf("padded bit string:");
+  printData(padded, byte_num);
 
   //////////////////////////////////////////////////////////
   // process in 1024 chuncks
   while(sha_context->currlen < sha_context->length){
-    // load into message buffer
-    printf("string copied to sha_context: ");
+    // load block into message buffer
     for(int i = 0; i < 128; ++i){
       sha_context->message_schedule[i] = padded[sha_context->currlen+i];
-      printf("%x", sha_context->message_schedule[i]);
+      //printf("%x", sha_context->message_schedule[i]);
     }
     sha_context->currlen += 128;
-    printf("\n");
+    printf("string copied to sha_context: ");
+    printData(sha_context->message_schedule, 128);
 
     // copy into the w
-    printf("string copied to w: ");
     uint64_t w[80];
     for(int i = 0; i < 16; ++i){
-      memcpy(&w[i],&sha_context->message_schedule[8*i], 8);
-      printf("%llx,", w[i]);
+      // abuse the cotiguousness of arrays to make 4 8-bit ints into 1 64-bit int
+      uint64_t* tmp = &sha_context->message_schedule[8*i];
+      memcpy(&w[i], tmp, 8);
     }
-    printf("\n\n");
+    // output for debugging
+    printf("data copied to w[0..15]: ");
+    printWord64(w, 16);
 
     // extend w[0..15] to w[16..79]
     for(int i = 16; i < 80; ++i){
-      w[i] = w[i-16] + sig0(w) + w[i-7] + sig1(w);
+      w[i] = w[i-16] + sig0(w[i-15]) + w[i-7] + sig1(w[i-2]);
     } 
 
     ////////////////////////////////////////////////////////
@@ -196,7 +210,7 @@ void sha512Digest(Context* sha_context, Digest* digest){
   //put hashes into Digest
   for(int i = 0; i < 8; ++i)
   {
-    digest->digest[i] = swapEndian64(sha_context->hash_val[i]);
+    digest->digest[i] = sha_context->hash_val[i];
   }
 
 }
