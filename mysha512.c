@@ -14,8 +14,8 @@
 #define S0(a) (ROR64(a,28) ^ ROR64(a,34) ^ ROR64(a,39))
 #define S1(a) (ROR64(e,14) ^ ROR64(e,18) ^ ROR64(e,41))
 
-#define sig0(w) (ROR64(w,1) ^ ROR64(w,8) ^ (ROR64(w,7)))
-#define sig1(w) (ROR64(w,19) ^ ROR64(w,61) ^ (ROR64(w,6)))
+#define sig0(w) (ROR64(w,1) ^ ROR64(w,8) ^ (w >> 7))
+#define sig1(w) (ROR64(w,19) ^ ROR64(w,61) ^ (w >> 6))
 
 #define CH(e,f,g) ((e & f) ^ ((!e) & g))
 #define MAJ(a,b,c) ((a & b) ^ (a & c) ^ (b & c))
@@ -159,14 +159,14 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
       //memcpy(&w[i], &tmp, 8);
       w[i] = *tmp;
     }
-    // output for debugging
-    printf("data copied to w[0..15]: ");
-    printWord64(w, 16);
 
     // extend w[0..15] to w[16..79]
     for(int i = 16; i < 80; ++i){
       w[i] = w[i-16] + sig0(w[i-15]) + w[i-7] + sig1(w[i-2]);
     } 
+    // output for debugging
+    printf("data copied to w[0..15]: ");
+    printWord64(w, 80);
 
     ////////////////////////////////////////////////////////
     // compression start
