@@ -66,9 +66,9 @@ uint64_t swapEndian64(uint64_t value){
   ((value & 0x0000000000FF0000) << 24u) | \
   ((value & 0x00000000FF000000) << 8u) | \
   ((value & 0x000000FF00000000) >> 8u) | \
-  ((value & 0x0000FF0000000000) << 24u) | \
-  ((value & 0x00FF000000000000) << 40u) | \
-  ((value & 0xFF00000000000000) << 56u));
+  ((value & 0x0000FF0000000000) >> 24u) | \
+  ((value & 0x00FF000000000000) >> 40u) | \
+  ((value & 0xFF00000000000000) >> 56u));
 }
 
 void sha512Init(Context* sha_context){
@@ -131,7 +131,7 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
   // length of the message (aka number of bits) in big endian
   // assume that no msgs longer than 2^64-1
   uint64_t be_val = swapEndian64((uint64_t)char_num);
-  memcpy(&(padded[byte_num - 9]), &be_val, sizeof(uint64_t));
+  memcpy(&(padded[byte_num - 8]), &be_val, sizeof(uint64_t));
 
 
   // print the padded string for debugging
@@ -151,11 +151,13 @@ void sha512Update(uint32_t char_num, char* str, Context* sha_context){
     printData(sha_context->message_schedule, 128);
 
     // copy into the w
-    uint64_t w[80];
+    uint64_t w[80] = {0};
     for(int i = 0; i < 16; ++i){
       // abuse the cotiguousness of arrays to make 4 8-bit ints into 1 64-bit int
-      uint64_t* tmp = &sha_context->message_schedule[8*i];
-      memcpy(&w[i], tmp, 8);
+      uint64_t* tmp = &(sha_context->message_schedule[8*i]);
+      *tmp = swapEndian64(*tmp);
+      //memcpy(&w[i], &tmp, 8);
+      w[i] = *tmp;
     }
     // output for debugging
     printf("data copied to w[0..15]: ");
