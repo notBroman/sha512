@@ -1,6 +1,7 @@
 import hashlib
 import string
 import itertools
+import timeit
 
 
 def read_file():
@@ -131,7 +132,10 @@ if __name__ == '__main__':
 
     print("Exercise 1")
     for h in hashes_ex1:
+        start = timeit.default_timer()
         print(brute_force_sha512_hash(h))
+        end = timeit.default_timer()
+        print("Runtime: ", end-start)
 
 
     print("\nExercise 2")
